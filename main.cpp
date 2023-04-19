@@ -9,7 +9,10 @@ int main(int argc, char *argv[])
     Pango::init();
 
     /* OsgFontMap is a PangoFontMap, so we can use the normal pangomm wrapping
-       from the rest of the program. */
+       from the rest of the program.
+       If OsgFontMap implements a new method you need to call, you can always
+       osg_font_map_foo(font_map->gobj());
+    */
     Glib::RefPtr<Pango::FontMap> font_map = Glib::wrap(PANGO_FONT_MAP(osg_font_map_new()));
     Glib::RefPtr<Pango::Context> context = font_map->create_context();
     Glib::RefPtr<Pango::Layout> layout = Pango::Layout::create(context);
