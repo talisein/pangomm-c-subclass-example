@@ -1,6 +1,5 @@
 #include <map>
 #include <iostream>
-#include <pangomm.h>
 #include "pango_font_map_osg.h"
 
 /* C++ implementation goes here */
@@ -35,26 +34,19 @@ struct OsgFontMapImpl
 
     PangoFont*
     load_font (PangoContext* c_context, const PangoFontDescription* c_desc) {
-        Glib::RefPtr<Pango::Context> context = Glib::wrap(c_context);
-        // Pango::FontDescription constructor is always making a copy. The
-        // constructor should take a const gobject but doesn't. Its fine because
-        // internally it calls pango_font_description_copy() which takes a const
-        // parameter.
-        const Pango::FontDescription desc { const_cast<PangoFontDescription*>(c_desc) };
-
-        std::cout << "load_font " << desc.to_string() << '\n';
+        auto str = pango_font_description_to_string(c_desc);
+        std::cout << "load_font " << str << '\n';
+        g_free(str);
         return nullptr;
     }
 
     PangoFontset* load_fontset (PangoContext* c_context,
                                 const PangoFontDescription* c_desc,
                                 PangoLanguage* c_language) {
-        Glib::RefPtr<Pango::Context> context = Glib::wrap(c_context);
-        const Pango::FontDescription desc {const_cast<PangoFontDescription*>(c_desc) };
-        Pango::Language language { c_language };
-
-        std::cout << "load_fontset " << desc.to_string() << " "
-                  << language.get_string() << '\n';
+        char *str = pango_font_description_to_string(c_desc);
+        const char* lang = pango_language_to_string(c_language);
+        std::cout << "load_fontset " << str << " " << lang << '\n';
+        g_free(str);
         return nullptr;
     }
 };
@@ -64,7 +56,7 @@ extern "C"
 
 struct _OsgFontMap
 {
-  GObject parent_instance;
+  PangoFontMap parent_instance;
 
   /* Other members, including private data. */
   OsgFontMapImpl *pImpl;
@@ -78,6 +70,7 @@ finalize (GObject *object)
     OsgFontMap *osgfontmap = OSG_FONT_MAP(object);
     delete osgfontmap->pImpl;
     osgfontmap->pImpl = nullptr;
+    PANGO_FONT_MAP_CLASS(osg_font_map_parent_class)->parent_class.finalize(object);
 }
 
 static void
