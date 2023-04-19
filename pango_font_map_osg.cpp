@@ -1,28 +1,60 @@
 #include <map>
 #include <iostream>
+#include <pangomm.h>
 #include "pango_font_map_osg.h"
 
 /* C++ implementation goes here */
 struct OsgFontMapImpl
 {
-    std::map<int, int> x;
+    std::map<int, int> my_map;
+    OsgFontMap *font_map; // For convenience if you need it
 
-    void list_families (PangoFontFamily*** families, int* n_families) {
-        std::cout << "list_families\n";
-        *n_families = 0;
-        *families = nullptr;
+    OsgFontMapImpl(OsgFontMap *font_map) : font_map(font_map) {
+        // populate my_map etc.
     }
 
-    PangoFont*
-    load_font (PangoContext* context, const PangoFontDescription* desc) {
-        std::cout << "load_font\n";
+    PangoFontFamily *get_pango_font_family_from_my_map(decltype(my_map)::iterator &it) {
+        // however you want to implement this
         return nullptr;
     }
 
-    PangoFontset* load_fontset (PangoContext* context,
-                                const PangoFontDescription* desc,
-                                PangoLanguage* language) {
-        std::cout << "load_fontset\n";
+    /* The contract here is that the returned families will be freed with
+     * g_free */
+    void list_families (PangoFontFamily*** families, int* n_families) {
+        std::cout << "list_families\n";
+        PangoFontFamily **list = (PangoFontFamily**)g_malloc(sizeof(PangoFontFamily*) * my_map.size());
+        PangoFontFamily **end = list + my_map.size();
+        auto my_map_iter = my_map.begin();
+        for (PangoFontFamily **iter = list; iter < end; ++iter, ++my_map_iter) {
+            *iter = get_pango_font_family_from_my_map(my_map_iter);
+        }
+
+        *n_families = my_map.size();
+        *families = list;
+    }
+
+    PangoFont*
+    load_font (PangoContext* c_context, const PangoFontDescription* c_desc) {
+        Glib::RefPtr<Pango::Context> context = Glib::wrap(c_context);
+        // Pango::FontDescription constructor is always making a copy. The
+        // constructor should take a const gobject but doesn't. Its fine because
+        // internally it calls pango_font_description_copy() which takes a const
+        // parameter.
+        const Pango::FontDescription desc { const_cast<PangoFontDescription*>(c_desc) };
+
+        std::cout << "load_font " << desc.to_string() << '\n';
+        return nullptr;
+    }
+
+    PangoFontset* load_fontset (PangoContext* c_context,
+                                const PangoFontDescription* c_desc,
+                                PangoLanguage* c_language) {
+        Glib::RefPtr<Pango::Context> context = Glib::wrap(c_context);
+        const Pango::FontDescription desc {const_cast<PangoFontDescription*>(c_desc) };
+        Pango::Language language { c_language };
+
+        std::cout << "load_fontset " << desc.to_string() << " "
+                  << language.get_string() << '\n';
         return nullptr;
     }
 };
@@ -102,7 +134,7 @@ osg_font_map_init (OsgFontMap *self)
 //  ViewerFilePrivate *priv = viewer_file_get_instance_private (self);
   /* initialize all public and private members to reasonable default values.
    * They are all automatically initialized to 0 to begin with. */
-  self->pImpl = new OsgFontMapImpl();
+  self->pImpl = new OsgFontMapImpl(self);
 }
 
 OsgFontMap *
