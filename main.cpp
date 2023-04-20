@@ -15,12 +15,13 @@ int main(int argc, char *argv[])
        osg_font_map_foo(font_map->gobj());
     */
     PangoFontMap* font_map = PANGO_FONT_MAP(osg_font_map_new());
-    PangoContext* context = pango_font_map_create_context(font_map);
+    PangoContext *context = pango_context_new();
+    pango_context_set_font_map(context, font_map);
     PangoLayout* layout = pango_layout_new(context);
     PangoRenderer* renderer = PANGO_RENDERER(osg_renderer_new());
 
     // Setting markup fails, I think because the font_map does not return a valid font.
-//    pango_layout_set_markup(layout, "example", 7);
+    pango_layout_set_markup(layout, "example", 7);
     pango_renderer_draw_layout(renderer, layout, 0, 0);
     g_object_unref(renderer);
     g_object_unref(layout);

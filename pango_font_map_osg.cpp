@@ -1,6 +1,8 @@
 #include <map>
 #include <iostream>
 #include "pango_font_map_osg.h"
+#include "pango_font_osg.h"
+#include "pango/pango-fontset-simple.h"
 
 /* C++ implementation goes here */
 struct OsgFontMapImpl
@@ -37,7 +39,8 @@ struct OsgFontMapImpl
         auto str = pango_font_description_to_string(c_desc);
         std::cout << "load_font " << str << '\n';
         g_free(str);
-        return nullptr;
+
+        return PANGO_FONT(osg_font_new(font_map, c_desc));
     }
 
     PangoFontset* load_fontset (PangoContext* c_context,
@@ -47,7 +50,9 @@ struct OsgFontMapImpl
         const char* lang = pango_language_to_string(c_language);
         std::cout << "load_fontset " << str << " " << lang << '\n';
         g_free(str);
-        return nullptr;
+        auto fontset = pango_fontset_simple_new(c_language);
+        pango_fontset_simple_append(fontset, load_font(c_context, c_desc));
+        return PANGO_FONTSET(fontset);
     }
 };
 
