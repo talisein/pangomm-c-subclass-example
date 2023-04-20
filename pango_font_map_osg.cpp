@@ -64,7 +64,7 @@ struct _OsgFontMap
   PangoFontMap parent_instance;
 
   /* Other members, including private data. */
-  OsgFontMapImpl *pImpl;
+  OsgFontMapImpl cpp_impl;
 };
 
 G_DEFINE_TYPE (OsgFontMap, osg_font_map, PANGO_TYPE_FONT_MAP);
@@ -73,8 +73,7 @@ static void
 finalize (GObject *object)
 {
     OsgFontMap *osgfontmap = OSG_FONT_MAP(object);
-    delete osgfontmap->pImpl;
-    osgfontmap->pImpl = nullptr;
+    osgfontmap->cpp_impl.~OsgFontMapImpl();
     PANGO_FONT_MAP_CLASS(osg_font_map_parent_class)->parent_class.finalize(object);
 }
 
@@ -86,7 +85,7 @@ list_families (
 )
 {
     OsgFontMap *osgfontmap = OSG_FONT_MAP(fontmap);
-    osgfontmap->pImpl->list_families(families, n_families);
+    osgfontmap->cpp_impl.list_families(families, n_families);
 }
 
 static PangoFont*
@@ -97,7 +96,7 @@ load_font (
 )
 {
     OsgFontMap *osgfontmap = OSG_FONT_MAP(fontmap);
-    return osgfontmap->pImpl->load_font(context, desc);
+    return osgfontmap->cpp_impl.load_font(context, desc);
 }
 
 static PangoFontset*
@@ -109,7 +108,7 @@ load_fontset (
 )
 {
     OsgFontMap *osgfontmap = OSG_FONT_MAP(fontmap);
-    return osgfontmap->pImpl->load_fontset(context, desc, language);
+    return osgfontmap->cpp_impl.load_fontset(context, desc, language);
 }
 
 static void
@@ -132,7 +131,7 @@ osg_font_map_init (OsgFontMap *self)
 //  ViewerFilePrivate *priv = viewer_file_get_instance_private (self);
   /* initialize all public and private members to reasonable default values.
    * They are all automatically initialized to 0 to begin with. */
-  self->pImpl = new OsgFontMapImpl(self);
+    new (&self->cpp_impl) OsgFontMapImpl(self);
 }
 
 OsgFontMap *
